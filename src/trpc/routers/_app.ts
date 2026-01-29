@@ -2,28 +2,9 @@
 import { inngest } from "@/inngest/client";
 import { createTRPCRouter, premiumProcedure, protectedProcedure } from "../init";
 import prisma from "@/lib/db";
+import { workflowsRouter } from "@/features/workflow/server/router";
 export const appRouter = createTRPCRouter({
-  testAi: premiumProcedure.mutation(async () => {
-   await inngest.send({name:"execute/ai"})
-   return { success: true , message: "AI execution triggered."};
-  }),
-  getWorkflow: protectedProcedure.query(() => {
-    // todo While the core principle holds: query → GET, mutations → POST—there are nuances
-    return prisma.workflow.findMany();
-  }),
-  createWorkflow: protectedProcedure.mutation(async () => {
-    await inngest.send({
-      name: "test/hello.world",
-      data: {
-        email: "ashu@mail.com",
-      },
-    });
-    return prisma.workflow.create({
-      data: {
-        name: "New Workflow",
-      },
-    });
-  }),
+  workflows:workflowsRouter
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;
