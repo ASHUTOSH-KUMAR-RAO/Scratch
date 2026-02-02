@@ -1,6 +1,8 @@
 import {
   WorkflowsContainer,
+  WorkflowsError,
   WorkflowsList,
+  WorkflowsLoading,
 } from "@/features/workflow/components/workflows";
 import { workflowsParamsLoader } from "@/features/workflow/server/params-loader";
 import { prefetchWorkflows } from "@/features/workflow/server/prefetch";
@@ -21,7 +23,7 @@ const Page = async ({ searchParams }: Props) => {
     <WorkflowsContainer>
       <HydrateClient>
         <ErrorBoundary
-          fallback={<div>Something went wrong loading workflows.</div>}
+          fallback={<WorkflowsError/>}
         >
           {/*  Basically the main purpose of this page is to host the WorkflowsList
         component and also we know that the the main purpose of Suspense is to
@@ -31,7 +33,7 @@ const Page = async ({ searchParams }: Props) => {
         with the server-side fetched data, ensuring that the WorkflowsList
         component has access to the necessary data when it renders on the client
         side. */}
-          <Suspense fallback={<div>Loading workflows...</div>}>
+          <Suspense fallback={<WorkflowsLoading/>}>
             <WorkflowsList />
           </Suspense>
         </ErrorBoundary>
