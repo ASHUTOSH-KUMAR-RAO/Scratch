@@ -35,13 +35,16 @@ export const workflowsRouter = createTRPCRouter({
       });
     }),
   // Basically getOne ka mtlb hota hai get a single workflow by id
-  getOne: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(({ ctx }) => {
-      return prisma.workflow.findUnique({
-        where: { id: ctx.auth.user.id },
-      });
-    }),
+ getOne: protectedProcedure
+  .input(z.object({ id: z.string() }))
+  .query(({ ctx, input }) => {  // ✅ input ko destructure karo
+    return prisma.workflow.findUniqueOrThrow({
+      where: {
+        id: input.id,  // ✅ Workflow ID use karo
+        userId: ctx.auth.user.id  // ✅ Security ke liye - sirf apne workflows access ho
+      },
+    });
+  }),
   // Get all workflows for the authenticated user
   getMany: protectedProcedure
     .input(
