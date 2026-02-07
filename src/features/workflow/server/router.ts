@@ -5,27 +5,43 @@ import {
   premiumProcedure,
   protectedProcedure,
 } from "@/trpc/init";
+import { NodeType } from "@prisma/client";
+import { Edge, Node } from "@xyflow/react";
 import { generateSlug } from "random-word-slugs";
 import z from "zod";
+
 export const workflowsRouter = createTRPCRouter({
-  // create a new workflow with a random name
+  // Create a new workflow with a random name
   create: premiumProcedure.mutation(({ ctx }) => {
     return prisma.workflow.create({
       data: {
-        name: generateSlug(3), // generate a random name with 3 words
+        name: generateSlug(3), // Generate random name with 3 words
         userId: ctx.auth.user.id,
+        nodes: {
+          create: {
+            type: NodeType.INITIAL,
+            position: { x: 0, y: 0 },
+            name: NodeType.INITIAL,
+          },
+        },
       },
     });
   }),
-  // delete a workflow by id
+
+  // Delete a workflow by id
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(({ ctx, input }) => {
-      return prisma.workflow.deleteMany({
-        where: { id: input.id, userId: ctx.auth.user.id },
+      // ✅ Use delete instead of deleteMany for single item deletion
+      return prisma.workflow.delete({
+        where: {
+          id: input.id,
+          userId: ctx.auth.user.id, // Security: Only delete user's own workflows
+        },
       });
     }),
-  // update the name of a workflow
+
+  // Update the name of a workflow
   updateName: protectedProcedure
     .input(z.object({ id: z.string(), name: z.string().min(1) }))
     .mutation(({ ctx, input }) => {
@@ -34,18 +50,47 @@ export const workflowsRouter = createTRPCRouter({
         data: { name: input.name },
       });
     }),
-  // Basically getOne ka mtlb hota hai get a single workflow by id
- getOne: protectedProcedure
-  .input(z.object({ id: z.string() }))
-  .query(({ ctx, input }) => {  // ✅ input ko destructure karo
-    return prisma.workflow.findUniqueOrThrow({
-      where: {
-        id: input.id,  // ✅ Workflow ID use karo
-        userId: ctx.auth.user.id  // ✅ Security ke liye - sirf apne workflows access ho
-      },
-    });
-  }),
-  // Get all workflows for the authenticated user
+
+  // Get a single workflow by id with nodes and edges
+  getOne: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Fetch workflow with related nodes and connections
+      const workflow = await prisma.workflow.findUniqueOrThrow({
+        where: {
+          id: input.id, // Workflow ID
+          userId: ctx.auth.user.id, // Security: Only access user's own workflows
+        },
+        include: { nodes: true, connections: true },
+      });
+
+      // Transform server nodes to react-flow compatible format
+      const nodes: Node[] = workflow.nodes.map((node) => ({
+        id: node.id,
+        type: node.type,
+        position: node.position as { x: number; y: number },
+        data: (node.data as Record<string, unknown>) || {},
+      }));
+
+      // Transform server connections to react-flow compatible edges
+      const edges: Edge[] = workflow.connections.map((connection) => ({
+        id: connection.id,
+        source: connection.fromNodeId,
+        target: connection.toNodeId,
+        sourceHandle: connection.fromOutput,
+        targetHandle: connection.toInput,
+      }));
+
+      // ✅ Return all data in one go (fixed duplicate return issue)
+      return {
+        id: workflow.id,
+        name: workflow.name,
+        nodes,
+        edges,
+      };
+    }),
+
+  // Get all workflows for the authenticated user with pagination
   getMany: protectedProcedure
     .input(
       z.object({
@@ -60,16 +105,18 @@ export const workflowsRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { page, pageSize, search } = input;
+
+      // Fetch workflows and total count in parallel for better performance
       const [items, totalCount] = await Promise.all([
         prisma.workflow.findMany({
-          skip: (page - 1) * pageSize,
-          take: pageSize,
+          skip: (page - 1) * pageSize, // Calculate offset for pagination
+          take: pageSize, // Limit results per page
           where: {
-            userId: ctx.auth.user.id,
-            name: { contains: search, mode: "insensitive" },
+            userId: ctx.auth.user.id, // Security: Only user's workflows
+            name: { contains: search, mode: "insensitive" }, // Case-insensitive search
           },
           orderBy: {
-            updatedAt: "desc",
+            updatedAt: "desc", // Show most recently updated first
           },
         }),
         prisma.workflow.count({
@@ -80,6 +127,7 @@ export const workflowsRouter = createTRPCRouter({
         }),
       ]);
 
+      // Calculate pagination metadata
       const totalPages = Math.ceil(totalCount / pageSize);
       const hasNextPage = page < totalPages;
       const hasPreviousPage = page > 1;
