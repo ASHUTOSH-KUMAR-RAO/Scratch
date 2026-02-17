@@ -14,12 +14,14 @@ import {
   Background,
   Controls,
   MiniMap,
+  Panel,
 } from "@xyflow/react";
 import { ErrorViews, LoadingViews } from "@/components/entety-views";
 import { useSuspenseWorkflow } from "@/features/workflow/hooks/use-workflows";
 
 import "@xyflow/react/dist/style.css";
 import { nodeComponents } from "@/config/node-components";
+import { AddNodeButton } from "./add-node-button";
 export const EditorLoading = () => {
   return <LoadingViews message="Loading editor..." />;
 };
@@ -62,12 +64,15 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
         fitView
         nodeTypes={nodeComponents}
         proOptions={{
-          hideAttribution:true
+          hideAttribution: true,
         }}
       >
-        <Background/>
-        <Controls/>
-        <MiniMap/>
+        <Background />
+        <Controls />
+        <MiniMap />
+        <Panel position="top-right">
+          <AddNodeButton />
+        </Panel>
       </ReactFlow>
     </div>
   );
