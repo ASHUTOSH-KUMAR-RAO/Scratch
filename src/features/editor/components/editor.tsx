@@ -14,7 +14,6 @@ import {
   Background,
   Controls,
   MiniMap,
-  Panel,
 } from "@xyflow/react";
 import { ErrorViews, LoadingViews } from "@/components/entety-views";
 import { useSuspenseWorkflow } from "@/features/workflow/hooks/use-workflows";
@@ -69,15 +68,12 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
         nodeTypes={nodeComponents}
         onInit={setEditor}
         proOptions={{
-          hideAttribution: true,
+          hideAttribution:true
         }}
       >
-        <Background />
-        <Controls />
-        <MiniMap />
-        <Panel position="top-right">
-          <AddNodeButton />
-        </Panel>
+        <Background/>
+        <Controls/>
+        <MiniMap/>
       </ReactFlow>
     </div>
   );
