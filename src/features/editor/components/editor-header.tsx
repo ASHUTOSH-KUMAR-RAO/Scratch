@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,25 +12,164 @@ import { useSidebar } from "@/components/ui/sidebar";
 import {
   useSuspenseWorkflow,
   useUpdateWokflowName,
+  useUpdateWorkflow,
 } from "@/features/workflow/hooks/use-workflows";
-import { ChevronsLeft, ChevronsRight, SaveIcon } from "lucide-react";
+import { useAtomValue } from "jotai";
+import { ChevronsLeft, ChevronsRight, SaveIcon, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { editorAtom } from "../store/atoms";
+import { cn } from "@/lib/utils";
 
-export const EditorSaveButton = ({ workflowId }: { workflowId: string }) => {
+// --- Save Status Types ---
+type SaveStatus = "idle" | "pending" | "success" | "error";
+
+const saveMessages = {
+  pending: [
+    "Saving your work...",
+    "Locking it in...",
+    "Almost there...",
+    "Hang tight...",
+  ],
+  success: [
+    "All changes saved!",
+    "Saved successfully!",
+    "Looking good — saved!",
+    "Your work is safe.",
+  ],
+  error: [
+    "Save failed. Try again?",
+    "Oops! Couldn't save.",
+    "Something went wrong.",
+    "Save error — retry?",
+  ],
+};
+
+function getRandomMessage(status: "pending" | "success" | "error") {
+  const list = saveMessages[status];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+// --- Animated Clock Icon (for pending state) ---
+const ClockSpinner = () => (
+  <span className="relative flex items-center justify-center w-4 h-4">
+    <Clock className="w-4 h-4 animate-spin [animation-duration:1.5s]" />
+  </span>
+);
+
+// --- Save Status Pill (shown next to button) ---
+const SaveStatusPill = ({
+  status,
+  message,
+}: {
+  status: SaveStatus;
+  message: string;
+}) => {
+  if (status === "idle") return null;
+
   return (
-    <Button
-      size="sm"
-      onClick={() => {}}
-      disabled={false}
-      className="gap-2 shadow-sm hover:shadow transition-shadow"
+    <div
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all duration-300",
+        "animate-in fade-in slide-in-from-right-2",
+        status === "pending" &&
+          "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+        status === "success" &&
+          "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+        status === "error" &&
+          "bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20"
+      )}
     >
-      <SaveIcon className="size-4" />
-      Save
-    </Button>
+      {status === "pending" && <ClockSpinner />}
+      {status === "success" && <CheckCircle2 className="w-3.5 h-3.5" />}
+      {status === "error" && <AlertCircle className="w-3.5 h-3.5" />}
+      <span>{message}</span>
+    </div>
   );
 };
 
+// --- Editor Save Button ---
+export const EditorSaveButton = ({ workflowId }: { workflowId: string }) => {
+  const editor = useAtomValue(editorAtom);
+  const saveWorkflow = useUpdateWorkflow();
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [statusMessage, setStatusMessage] = useState("");
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimer = () => {
+    if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+  };
+
+  const handleSave = async () => {
+    if (!editor) return;
+
+    clearTimer();
+    setSaveStatus("pending");
+    setStatusMessage(getRandomMessage("pending"));
+
+    const nodes = editor.getNodes();
+    const edges = editor.getEdges();
+
+    try {
+      await saveWorkflow.mutateAsync({
+        id: workflowId,
+        nodes,
+        edges,
+      });
+
+      setSaveStatus("success");
+      setStatusMessage(getRandomMessage("success"));
+
+      statusTimerRef.current = setTimeout(() => {
+        setSaveStatus("idle");
+      }, 2500);
+    } catch {
+      setSaveStatus("error");
+      setStatusMessage(getRandomMessage("error"));
+
+      statusTimerRef.current = setTimeout(() => {
+        setSaveStatus("idle");
+      }, 3500);
+    }
+  };
+
+  useEffect(() => () => clearTimer(), []);
+
+  return (
+    <div className="flex items-center gap-2">
+      <SaveStatusPill status={saveStatus} message={statusMessage} />
+      <Button
+        size="sm"
+        onClick={handleSave}
+        disabled={saveStatus === "pending"}
+        className={cn(
+          "gap-2 shadow-sm hover:shadow transition-all duration-200",
+          saveStatus === "success" &&
+            "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10",
+          saveStatus === "error" &&
+            "border-red-500/30 bg-red-500/5 text-red-500 dark:text-red-400 hover:bg-red-500/10"
+        )}
+      >
+        {saveStatus === "pending" ? (
+          <ClockSpinner />
+        ) : saveStatus === "success" ? (
+          <CheckCircle2 className="size-4" />
+        ) : saveStatus === "error" ? (
+          <AlertCircle className="size-4" />
+        ) : (
+          <SaveIcon className="size-4" />
+        )}
+        {saveStatus === "pending"
+          ? "Saving..."
+          : saveStatus === "error"
+          ? "Retry"
+          : "Save"}
+      </Button>
+    </div>
+  );
+};
+
+// --- Editor Name Input ---
 export const EditorNameInput = ({ workflowId }: { workflowId: string }) => {
   const { data: workflow } = useSuspenseWorkflow(workflowId);
   const updateWorkflow = useUpdateWokflowName();
@@ -110,6 +249,7 @@ export const EditorNameInput = ({ workflowId }: { workflowId: string }) => {
   );
 };
 
+// --- Editor Breadcrumbs ---
 export const EditorBreadcrumbs = ({ workflowId }: { workflowId: string }) => {
   return (
     <Breadcrumb>
@@ -132,6 +272,7 @@ export const EditorBreadcrumbs = ({ workflowId }: { workflowId: string }) => {
   );
 };
 
+// --- Editor Header ---
 export const EditorHeader = ({ workflowId }: { workflowId: string }) => {
   const { toggleSidebar, open } = useSidebar();
 
@@ -173,7 +314,7 @@ export const EditorHeader = ({ workflowId }: { workflowId: string }) => {
         </p>
       </div>
 
-      {/* Right Section - Save Button */}
+      {/* Right Section - Save Button with Status */}
       <div className="flex items-center">
         <EditorSaveButton workflowId={workflowId} />
       </div>
