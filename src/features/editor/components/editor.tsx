@@ -14,6 +14,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  Panel,
 } from "@xyflow/react";
 import { ErrorViews, LoadingViews } from "@/components/entety-views";
 import { useSuspenseWorkflow } from "@/features/workflow/hooks/use-workflows";
@@ -31,11 +32,10 @@ export const EditorError = () => {
   return <ErrorViews message="Failed to load Editor.." />;
 };
 
-
 export const Editor = ({ workflowId }: { workflowId: string }) => {
   const { data: workflow } = useSuspenseWorkflow(workflowId);
 
-    const setEditor = useSetAtom(editorAtom)
+  const setEditor = useSetAtom(editorAtom);
   const [nodes, setNodes] = useState<Node[]>(workflow.nodes);
   const [edges, setEdges] = useState<Edge[]>(workflow.edges);
 
@@ -68,12 +68,20 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
         nodeTypes={nodeComponents}
         onInit={setEditor}
         proOptions={{
-          hideAttribution:true
+          hideAttribution: true,
         }}
+        snapGrid={[10, 10]}
+        snapToGrid
+        panOnScroll
+        panOnDrag={false}
+        selectionOnDrag
       >
-        <Background/>
-        <Controls/>
-        <MiniMap/>
+        <Background />
+        <Controls />
+        <MiniMap />
+        <Panel position="top-right">
+          <AddNodeButton />
+        </Panel>
       </ReactFlow>
     </div>
   );
