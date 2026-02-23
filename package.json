@@ -12,6 +12,7 @@
   "dependencies": {
     "@ai-sdk/google": "^2.0.17",
     "@hookform/resolvers": "^5.2.2",
+    "@paralleldrive/cuid2": "^3.3.0",
     "@polar-sh/better-auth": "^1.6.4",
     "@polar-sh/sdk": "^0.42.2",
     "@prisma/client": "^6.19.2",
@@ -45,7 +46,7 @@
     "@trpc/client": "^11.8.1",
     "@trpc/server": "^11.8.1",
     "@trpc/tanstack-react-query": "^11.8.1",
-    "@xyflow/react": "^12.10.0",
+    "@xyflow/react": "^12.10.1",
     "ai": "^5.0.60",
     "better-auth": "^1.4.17",
     "class-variance-authority": "^0.7.1",
