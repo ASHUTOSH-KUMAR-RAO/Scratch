@@ -16,16 +16,22 @@ export function BaseNode({
   return (
     <div
       className={cn(
-        "bg-card text-card-foreground relative rounded-sm border border-muted-foreground/50 shadow-sm transition-shadow focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[status=error]:border-destructive data-[status=error]:bg-destructive/50 data-[status=error]:text-destructive-foreground data-[status=error]:focus:ring-destructive hover:bg-accent",
+        "relative rounded-sm border border-muted-foreground bg-card text-card-foreground hover:bg-accent",
         className,
       )}
       tabIndex={0}
       {...props}
     >
       {props.children}
-      {status === "error" && <XCircleIcon className="absolute -right-0.5 -bottom-0.5 size-2 text-red-700 stroke-3" />}
-      {status === "success" && <CheckCircle2 className="absolute -right-0.5 -bottom-0.5 size-2 text-green-700 stroke-3" />}
-      {status === "loading" && <Loader2Icon className="absolute -right-0.5 -bottom-0.5 size-2 text-blue-700 stroke-3" />}
+      {status === "error" && (
+        <XCircleIcon className="absolute right-0.5 bottom-0.5 size-2 text-red-700 stroke-3" />
+      )}
+      {status === "success" && (
+        <CheckCircle2 className="absolute right-0.5 bottom-0.5 size-2 text-green-700 stroke-3" />
+      )}
+      {status === "loading" && (
+        <Loader2Icon className="absolute -right-0.5 -bottom-0.5 size-2 text-blue-700 stroke-3 animate-spin" />
+      )}
     </div>
   );
 }

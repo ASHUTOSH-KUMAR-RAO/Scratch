@@ -88,6 +88,28 @@ export const useUpdateWorkflow = () => {
     }),
   );
 };
+/**
+ * Hook to execute a workflow
+ */
+export const useExecuteWorkflow = () => {
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+
+  return useMutation(
+    trpc.workflows.execute.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`Workflow "${data.workflow.name}" execute successfully!`);
+        queryClient.invalidateQueries(trpc.workflows.getMany.queryOptions({}));
+        queryClient.invalidateQueries(
+          trpc.workflows.getOne.queryOptions({ id: data.workflow.id }),
+        );
+      },
+      onError: (error) => {
+        toast.error(`Failed to execute workflow: ${error.message}`);
+      },
+    }),
+  );
+};
 
 
 /**
