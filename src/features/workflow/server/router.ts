@@ -1,4 +1,5 @@
 import { PAGINATION } from "@/config/constants";
+import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
 import {
   createTRPCRouter,
@@ -11,6 +12,25 @@ import { generateSlug } from "random-word-slugs";
 import z from "zod";
 
 export const workflowsRouter = createTRPCRouter({
+  execute: protectedProcedure.input(z.object({id:z.string()})).mutation(async({input,ctx})=>{
+    const workflow = await prisma.workflow.findUniqueOrThrow({
+      where:{id:input.id,userId:ctx.auth.user.id},
+    });
+
+    await inngest.send({
+      id: `workflow-execution-${workflow.id}-${Date.now()}`,
+      name: "workflows/execute.workflow",
+      data: {
+        workflowId: workflow.id,
+        userId: ctx.auth.user.id,
+      },
+    });
+    // For demonstration, we just return the workflow data. In a real implementation, you would execute the workflow logic here.
+    return {
+      message: `Workflow ${workflow.name} executed successfully!`,
+      workflow,
+    };
+  }),
   // Create a new workflow with a random name
   create: premiumProcedure.mutation(({ ctx }) => {
     return prisma.workflow.create({
