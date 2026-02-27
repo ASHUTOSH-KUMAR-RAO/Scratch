@@ -21,7 +21,7 @@ export const workflowsRouter = createTRPCRouter({
       id: `workflow-execution-${workflow.id}-${Date.now()}`,
       name: "workflows/execute.workflow",
       data: {
-        workflowId: workflow.id,
+        workflowId: input.id,
         userId: ctx.auth.user.id,
       },
     });
