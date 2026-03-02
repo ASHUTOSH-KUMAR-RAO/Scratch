@@ -14,6 +14,7 @@ type HttpRequestNodeData = {
   method?: HttpMethod;
   body?: string;
   [key: string]: unknown;
+  variableName?:string
 };
 
 type HttpRequestNodeType = Node<HttpRequestNodeData>;
@@ -40,7 +41,7 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
             ...node,
             data: {
               ...node.data,
-              ...values
+              ...values,
             },
           };
         }
