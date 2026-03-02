@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,17 +28,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Code2, Globe, Send } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Globe, Code2, Send } from "lucide-react";
 import z from "zod";
 
 const HttpRequestFormSchema = z.object({
   endpoint: z.url("Please enter a valid URL"),
   method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
   body: z.string().optional(),
+  variableName: z
+    .string()
+    .min(1, { message: "Variable name is required" })
+    .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, {
+      message:
+        "Variable name must start with a letter or underscore, and contain only letters, numbers, and underscores",
+    }),
 });
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -75,6 +82,8 @@ const METHOD_CONFIG: Record<
   },
 };
 
+export type HttpRequestFormValues = z.infer<typeof HttpRequestFormSchema>;
+
 interface HttpRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -82,6 +91,8 @@ interface HttpRequestDialogProps {
   onSubmit: (values: z.infer<typeof HttpRequestFormSchema>) => void;
   defaultMethod?: HttpMethod;
   defaultBody?: string;
+  variableName?: string;
+  defaultValues?: Partial<HttpRequestFormValues>;
 }
 
 export const HttpRequestDialog = ({
@@ -90,26 +101,28 @@ export const HttpRequestDialog = ({
   onSubmit,
   defaultEndPoint = "",
   defaultMethod = "GET",
-  defaultBody = "",
+  defaultValues = {},
 }: HttpRequestDialogProps) => {
   const form = useForm<z.infer<typeof HttpRequestFormSchema>>({
     resolver: zodResolver(HttpRequestFormSchema),
     defaultValues: {
+      variableName: defaultValues.variableName ?? "",
       endpoint: defaultEndPoint,
       method: defaultMethod,
-      body: defaultBody,
+      body: defaultValues.body ?? "",
     },
   });
 
   useEffect(() => {
     if (open) {
       form.reset({
+        variableName: defaultValues.variableName ?? "",
         endpoint: defaultEndPoint,
         method: defaultMethod,
-        body: defaultBody,
+        body: defaultValues.body ?? "",
       });
     }
-  }, [open, defaultEndPoint, defaultMethod, defaultBody, form]);
+  }, [open, defaultEndPoint, defaultMethod, defaultValues.variableName, defaultValues.body, form]);
 
   const watchMethod = form.watch("method") as HttpMethod;
   const showBodyField = ["POST", "PUT", "PATCH"].includes(watchMethod);
@@ -148,8 +161,26 @@ export const HttpRequestDialog = ({
               onSubmit={form.handleSubmit(handleSubmit)}
               className="space-y-5"
             >
-              {/* Method + Endpoint */}
               <div className="flex flex-col sm:flex-row gap-3">
+                <FormField
+                  control={form.control}
+                  name="variableName"
+                  render={({ field }) => (
+                    <FormItem className="flex-1 min-w-0">
+                      <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Variable Name
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="my_api_call"
+                          className="font-mono text-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="method"
@@ -165,25 +196,34 @@ export const HttpRequestDialog = ({
                         <FormControl>
                           <SelectTrigger className="w-full font-mono font-bold">
                             <SelectValue placeholder="Method">
-                              <span className={METHOD_CONFIG[field.value as HttpMethod]?.color}>
+                              <span
+                                className={
+                                  METHOD_CONFIG[field.value as HttpMethod]
+                                    ?.color
+                                }
+                              >
                                 {field.value}
                               </span>
                             </SelectValue>
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {(Object.keys(METHOD_CONFIG) as HttpMethod[]).map((method) => (
-                            <SelectItem key={method} value={method}>
-                              <div className="flex items-center gap-2.5">
-                                <span className={`text-xs font-mono font-bold w-[48px] ${METHOD_CONFIG[method].color}`}>
-                                  {method}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {METHOD_CONFIG[method].description}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                          {(Object.keys(METHOD_CONFIG) as HttpMethod[]).map(
+                            (method) => (
+                              <SelectItem key={method} value={method}>
+                                <div className="flex items-center gap-2.5">
+                                  <span
+                                    className={`text-xs font-mono font-bold w-[48px] ${METHOD_CONFIG[method].color}`}
+                                  >
+                                    {method}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {METHOD_CONFIG[method].description}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ),
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -280,10 +320,7 @@ export const HttpRequestDialog = ({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="flex-1 sm:flex-none gap-2"
-                >
+                <Button type="submit" className="flex-1 sm:flex-none gap-2">
                   <Send className="h-3.5 w-3.5" />
                   Save Request
                 </Button>
