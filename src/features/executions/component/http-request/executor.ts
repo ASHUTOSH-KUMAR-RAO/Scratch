@@ -1,38 +1,60 @@
 import { NodeExecutor } from "@/features/executions/types";
 import { NonRetriableError } from "inngest";
-import ky, { type Options as KyOptions, HTTPError } from "ky";
+import ky, { type Options as KyOptions } from "ky";
+import Handlebars from "handlebars";
 
 type HttpRequestData = {
-  variableName?: string;
-  endpoint?: string;
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  variableName: string;
+  endpoint: string;
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: string;
 };
 
+Handlebars.registerHelper("json", (context) =>
+{
+  const stringified = JSON.stringify(context,null,2)
+  return new Handlebars.SafeString(stringified)
+}
+);
 export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
   data,
-  context,
   step,
   nodeId,
+  context,
 }) => {
+  // ✅ Validation checks (same as before)
   if (!data.endpoint) {
     throw new NonRetriableError("HTTP Request node: No endpoint configured");
   }
   if (!data.variableName) {
-    throw new NonRetriableError("Variable Name not configured");
+    throw new NonRetriableError(
+      "HTTP Request node: Variable Name not configured",
+    );
+  }
+  if (!data.method) {
+    throw new NonRetriableError("HTTP Request node: Method not configured");
   }
 
   const result = await step.run("http-request", async () => {
-    const endpoint = data.endpoint!;
-    const method = data.method || "GET";
+    const endpoint = Handlebars.compile(data.endpoint)(context);
+    const method = data.method;
 
     const options: KyOptions = {
       method,
-      throwHttpErrors: false, // ky won't throw on 4xx/5xx
+      throwHttpErrors: false,
     };
 
+    // ✅ Fix 4: Body ko JSON.parse + JSON.stringify se validate kar rahe hain
     if (["POST", "PATCH", "PUT"].includes(method) && data.body) {
-      options.body = data.body;
+      try {
+        const resolved = Handlebars.compile(data.body)(context)
+        JSON.parse(resolved)
+        options.body = resolved;
+      } catch {
+        throw new NonRetriableError(
+          "HTTP Request node: Body is not valid JSON",
+        );
+      }
       options.headers = {
         "Content-Type": "application/json",
       };
@@ -49,6 +71,13 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       );
     }
 
+    // ✅ Fix 2: HTTP 4xx/5xx errors explicitly handle kar rahe hain
+    if (!response.ok) {
+      throw new NonRetriableError(
+        `HTTP Request failed: ${response.status} ${response.statusText}`,
+      );
+    }
+
     const contentType = response.headers.get("content-type");
 
     const responseData = contentType?.includes("application/json")
@@ -62,17 +91,14 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
         data: responseData,
       },
     };
-    if (data.variableName) {
-      return {
-        ...context,
-        [data.variableName]: responsePayload,
-      };
-    }
+
+    // ✅ Fix 1 & 3: Redundant if hata diya, context safely spread kar rahe hain
     return {
-      ...context,
-      ...responsePayload,
+      ...(context ?? {}),
+      [data.variableName]: responsePayload,
     };
   });
 
+  // ✅ result kabhi undefined nahi hoga ab
   return result;
 };
