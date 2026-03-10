@@ -75,6 +75,9 @@ model Verification {
 
 enum NodeType{
   INITIAL
+  MANUAL_TRIGGER
+  HTTP_REQUEST
+  GOOGLE_FORM_TRIGGER
 }
 model Workflow{
   id          String        @id @default(cuid())
