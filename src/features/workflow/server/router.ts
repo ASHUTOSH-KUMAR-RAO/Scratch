@@ -1,5 +1,6 @@
 import { PAGINATION } from "@/config/constants";
 import { inngest } from "@/inngest/client";
+import { sendWorkflowExecution } from "@/inngest/utils";
 import prisma from "@/lib/db";
 import {
   createTRPCRouter,
@@ -17,14 +18,9 @@ export const workflowsRouter = createTRPCRouter({
       where:{id:input.id,userId:ctx.auth.user.id},
     });
 
-    await inngest.send({
-      id: `workflow-execution-${workflow.id}-${Date.now()}`,
-      name: "workflows/execute.workflow",
-      data: {
-        workflowId: input.id,
-        userId: ctx.auth.user.id,
-      },
-    });
+    await sendWorkflowExecution({
+      workflowId:input.id
+    })
     // For demonstration, we just return the workflow data. In a real implementation, you would execute the workflow logic here.
     return {
       message: `Workflow ${workflow.name} executed successfully!`,
