@@ -9,7 +9,7 @@ import { useNodeStatus } from "@/features/executions/hooks/use-node-status";
 import { googleFormTriggerChannel } from "@/inngest/channels/google-form-trigger";
 import { fetchGoogleFormTriggerRealtimeToken } from "./actions";
 
-export const GoogleFormTrigger = memo((props: NodeProps) => {
+export const GoogleFormTriggerNode = memo((props: NodeProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
 const nodeStatus = useNodeStatus({
@@ -37,4 +37,4 @@ const nodeStatus = useNodeStatus({
   );
 });
 
-GoogleFormTrigger.displayName = "GoogleFormTrigger";
+GoogleFormTriggerNode.displayName = "GoogleFormTriggerNode";
