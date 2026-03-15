@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Workflow, Zap, Shield } from "lucide-react";
+import { Workflow, Zap, Shield, Brain } from "lucide-react";
 
 export const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -66,6 +66,20 @@ export const AuthLayout = ({ children }: { children: React.ReactNode }) => {
 
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Brain className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground mb-1">
+                  AI-Powered Nodes
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Built-in support for Gemini, OpenAI & Anthropic
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Shield className="w-5 h-5 text-primary" />
               </div>
               <div>
@@ -84,13 +98,35 @@ export const AuthLayout = ({ children }: { children: React.ReactNode }) => {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground mb-1">
-                  400+ Integrations
+                  Growing Integrations
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Connect to your favorite apps and services
+                  Stripe, Google Forms, HTTP & more — actively expanding
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Node Badges */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              "Gemini",
+              "OpenAI",
+              "Anthropic",
+              "Stripe",
+              "HTTP",
+              "Google Forms",
+            ].map((node) => (
+              <span
+                key={node}
+                className="px-2.5 py-1 text-xs font-medium rounded-md border bg-background text-foreground"
+              >
+                {node}
+              </span>
+            ))}
+            <span className="px-2.5 py-1 text-xs font-medium rounded-md border bg-primary/10 text-primary border-primary/20">
+              + More coming
+            </span>
           </div>
 
           {/* Creator Info */}
