@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import {
   Form,
   FormControl,
@@ -19,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -27,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -40,7 +43,9 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
-// ─── Models ────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
+// Models
+// ───────────────────────────────────────────────────────────────────────────
 
 const AVAILABLE_MODELS = [
   "gemini-2.0-flash",
@@ -81,7 +86,9 @@ const MODEL_CONFIG: Record<
   },
 };
 
-// ─── Prompt Templates ──────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
+// Prompt Templates
+// ───────────────────────────────────────────────────────────────────────────
 
 const PROMPT_TEMPLATES = [
   {
@@ -131,7 +138,9 @@ const PROMPT_TEMPLATES = [
   },
 ] as const;
 
-// ─── Schema ────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
+// Schema
+// ───────────────────────────────────────────────────────────────────────────
 
 const GeminiFormSchema = z.object({
   variableName: z
@@ -139,7 +148,7 @@ const GeminiFormSchema = z.object({
     .min(1, { message: "Variable name is required" })
     .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, {
       message:
-        "Must start with a letter or underscore, only letters, numbers, and underscores allowed",
+        "Must start with a letter or underscore, only letters, numbers & underscores allowed",
     }),
   model: z.enum(AVAILABLE_MODELS),
   systemPrompt: z.string().optional(),
@@ -147,8 +156,6 @@ const GeminiFormSchema = z.object({
 });
 
 export type GeminiFormValues = z.infer<typeof GeminiFormSchema>;
-
-// ─── Props ─────────────────────────────────────────────────────────────────
 
 interface GeminiDialogProps {
   open: boolean;
@@ -158,7 +165,9 @@ interface GeminiDialogProps {
   geminiApiKey?: string;
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────
+// Component
+// ───────────────────────────────────────────────────────────────────────────
 
 export const GeminiDialog = ({
   open,
@@ -196,7 +205,6 @@ export const GeminiDialog = ({
     }
   }, [open, defaultValues, form]);
 
-  // Apply a prompt template
   const applyTemplate = (template: (typeof PROMPT_TEMPLATES)[number]) => {
     form.setValue("systemPrompt", template.systemPrompt);
     form.setValue("userPrompt", template.userPrompt);
@@ -204,7 +212,10 @@ export const GeminiDialog = ({
     setTestError(null);
   };
 
-  // Test Run — calls Gemini API inline
+  // ───────────────────────────────────────────────────────────────────────
+  // Test API Run (Inline Gemini call)
+  // ───────────────────────────────────────────────────────────────────────
+
   const handleTestRun = async () => {
     const { model, systemPrompt, userPrompt } = form.getValues();
     if (!userPrompt) return;
@@ -242,6 +253,7 @@ export const GeminiDialog = ({
       const text =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ??
         "No response received.";
+
       setTestResult(text);
     } catch (err: any) {
       setTestError(err.message ?? "Test run failed.");
@@ -255,6 +267,7 @@ export const GeminiDialog = ({
     onOpenChange(false);
   };
 
+  // ───────────────────────────────────────────────────────────────────────
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px] p-0 overflow-hidden">
@@ -267,26 +280,24 @@ export const GeminiDialog = ({
                 Gemini Configuration
               </DialogTitle>
             </div>
-            <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
+            <DialogDescription className="text-sm text-muted-foreground">
               Configure an AI model and prompts for this node
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        {/* Form body */}
-        <div className="px-6 py-5 overflow-y-auto max-h-[70vh] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {/* Form */}
+        <div className="px-6 py-5 overflow-y-auto max-h-[70vh]">
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="space-y-5"
-            >
-              {/* Variable Name */}
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+
+              {/* VARIABLE NAME */}
               <FormField
                 control={form.control}
                 name="variableName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <FormLabel className="text-xs font-medium text-muted-foreground uppercase">
                       Variable Name
                     </FormLabel>
                     <FormControl>
@@ -301,31 +312,29 @@ export const GeminiDialog = ({
                 )}
               />
 
-              {/* Model */}
+              {/* MODEL SELECT */}
               <FormField
                 control={form.control}
                 name="model"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <FormLabel className="text-xs font-medium text-muted-foreground uppercase">
                       Model
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="w-full font-mono text-sm">
+                        <SelectTrigger className="font-mono text-sm">
                           <SelectValue placeholder="Select model">
-                            <span className="font-mono text-sm">
-                              {field.value}
-                            </span>
+                            {field.value}
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {AVAILABLE_MODELS.map((model) => (
                           <SelectItem key={model} value={model}>
-                            <div className="flex flex-col gap-0.5 py-0.5">
+                            <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5">
-                                <span className="font-mono text-xs font-semibold">
+                                <span className="font-mono text-xs">
                                   {model}
                                 </span>
                                 {MODEL_CONFIG[model].tag && (
@@ -349,37 +358,33 @@ export const GeminiDialog = ({
                 )}
               />
 
-              {/* Variable hint */}
+              {/* INPUT HINT BOX */}
               <div className="flex items-start gap-2 rounded-md bg-muted/50 border px-3 py-2.5 text-xs text-muted-foreground">
-                <Code2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                <p className="leading-relaxed">
-                  Use{" "}
-                  <code className="font-mono bg-background border rounded px-1 py-0.5 text-foreground">
-                    {"{input}"}
-                  </code>{" "}
-                  for dynamic input, or{" "}
-                  <code className="font-mono bg-background border rounded px-1 py-0.5 text-foreground">
-                    {"{{json.variable}}"}
-                  </code>{" "}
-                  for variables from previous nodes.
+                <Code2 className="h-3.5 w-3.5 mt-0.5" />
+                <p>
+                  Use <code className="font-mono bg-background px-1">{"{input}"}</code>{" "}
+                  for dynamic input or{" "}
+                  <code className="font-mono bg-background px-1">{"{{json.variable}}"}</code>{" "}
+                  to access previous node variables.
                 </p>
               </div>
 
-              {/* ── Prompt Templates ── */}
+              {/* TEMPLATES */}
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <LayoutTemplate className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <LayoutTemplate className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase">
                     Prompt Templates
                   </span>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
                   {PROMPT_TEMPLATES.map((template) => (
                     <button
                       key={template.label}
                       type="button"
                       onClick={() => applyTemplate(template)}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md border bg-background hover:bg-muted transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md border bg-background hover:bg-muted"
                     >
                       <span>{template.icon}</span>
                       <span>{template.label}</span>
@@ -388,14 +393,14 @@ export const GeminiDialog = ({
                 </div>
               </div>
 
-              {/* System Prompt */}
+              {/* SYSTEM PROMPT */}
               <FormField
                 control={form.control}
                 name="systemPrompt"
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      <FormLabel className="text-xs font-medium text-muted-foreground uppercase">
                         System Prompt
                       </FormLabel>
                       <Badge variant="outline" className="text-xs">
@@ -404,52 +409,48 @@ export const GeminiDialog = ({
                     </div>
                     <FormControl>
                       <Textarea
-                        placeholder="You are a helpful assistant. Answer concisely and accurately."
+                        placeholder="You are a helpful assistant."
                         {...field}
-                        className="min-h-[80px] text-sm resize-none leading-relaxed"
+                        className="min-h-[80px] text-sm resize-none"
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
-                      Sets the behavior and persona of the model.
+                      Sets model behavior & personality.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* User Prompt */}
+              {/* USER PROMPT */}
               <FormField
                 control={form.control}
                 name="userPrompt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <FormLabel className="text-xs font-medium text-muted-foreground uppercase">
                       User Prompt
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder={"Summarize the following text:\n\n{input}"}
+                        placeholder={"Summarize the following text:\\n\\n{input}"}
                         {...field}
-                        className="min-h-[110px] text-sm resize-none leading-relaxed font-mono"
+                        className="min-h-[110px] text-sm resize-none font-mono"
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
-                      Use{" "}
-                      <code className="font-mono bg-muted rounded px-1">
-                        {"{{variableName}}"}
-                      </code>{" "}
-                      to reference outputs from previous nodes.
+                      Use <code className="font-mono bg-muted px-1">{"{{variableName}}"}</code> to reference previous outputs.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* ── Test Run Section ── */}
+              {/* TEST RUN SECTION */}
               <div className="rounded-md border bg-muted/30 p-3 space-y-3">
                 <div className="flex items-center gap-1.5">
-                  <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <FlaskConical className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium uppercase text-muted-foreground">
                     Test Run
                   </span>
                 </div>
@@ -459,7 +460,7 @@ export const GeminiDialog = ({
                     placeholder="Enter test input for {input}..."
                     value={testInput}
                     onChange={(e) => setTestInput(e.target.value)}
-                    className="text-sm flex-1"
+                    className="text-sm"
                   />
                   <Button
                     type="button"
@@ -467,7 +468,7 @@ export const GeminiDialog = ({
                     size="sm"
                     onClick={handleTestRun}
                     disabled={testLoading || !form.getValues("userPrompt")}
-                    className="shrink-0 gap-1.5"
+                    className="gap-1.5"
                   >
                     {testLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -478,22 +479,22 @@ export const GeminiDialog = ({
                   </Button>
                 </div>
 
-                {/* Test Result */}
+                {/* Result */}
                 {testResult && (
-                  <div className="rounded-md bg-background border px-3 py-2.5 text-xs text-foreground leading-relaxed whitespace-pre-wrap max-h-[150px] overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+                  <div className="rounded-md bg-background border px-3 py-2.5 text-xs whitespace-pre-wrap max-h-[150px] overflow-y-auto">
                     {testResult}
                   </div>
                 )}
 
-                {/* Test Error */}
+                {/* Error */}
                 {testError && (
-                  <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-600 leading-relaxed">
+                  <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2.5 text-xs text-red-600">
                     ⚠️ {testError}
                   </div>
                 )}
               </div>
 
-              {/* Footer */}
+              {/* FOOTER */}
               <DialogFooter className="pt-2 gap-2">
                 <Button
                   type="button"

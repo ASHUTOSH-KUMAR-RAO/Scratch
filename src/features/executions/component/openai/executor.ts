@@ -4,20 +4,21 @@ import { NodeExecutor } from "@/features/executions/types";
 import { NonRetriableError } from "inngest";
 import Handlebars from "handlebars";
 import { generateText } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { geminiChannel } from "@/inngest/channels/gemini";
+import { createOpenAI } from "@ai-sdk/openai";
+import type { LanguageModel } from "ai";
+import { openAiChannel } from "@/inngest/channels/openai";
 
 // Valid & stable Gemini model list
-export type GeminiModel =
-  | "gemini-2.0-flash"
-  | "gemini-1.5-flash"
-  | "gemini-1.5-flash-latest"
-  | "gemini-1.5-pro"
-  | "gemini-1.5-pro-latest";
+export type OpenAiModel = "gpt-5.3";
+("gpt-5.3-mini");
+("gpt-5.2");
+("gpt-5.1");
+("gpt-4.1");
+("gpt-4.1-mini");
 
-export type GeminiNodeData = {
+export type OpenAiNodeData = {
   variableName: string;
-  model: GeminiModel;
+  model: OpenAiModel;
   systemPrompt?: string;
   userPrompt: string;
 };
@@ -27,47 +28,45 @@ Handlebars.registerHelper("json", (context) => {
   return new Handlebars.SafeString(stringified);
 });
 
-export const geminiExecutor: NodeExecutor<GeminiNodeData> = async ({
+export const OpenAiExecutor: NodeExecutor<OpenAiNodeData> = async ({
   data,
   step,
   nodeId,
   context,
   publish,
 }) => {
-  await publish(
-    geminiChannel().status({ nodeId, status: "loading" })
-  );
+  await publish(openAiChannel().status({ nodeId, status: "loading" }));
 
   // Validation
   if (!data.variableName) {
-    await publish(geminiChannel().status({ nodeId, status: "error" }));
-    throw new NonRetriableError("Gemini node: Variable name not configured");
+    await publish(openAiChannel().status({ nodeId, status: "error" }));
+    throw new NonRetriableError("OpenAi Node: Variable name not configured");
   }
 
   if (!data.model) {
-    await publish(geminiChannel().status({ nodeId, status: "error" }));
-    throw new NonRetriableError("Gemini node: Model not configured");
+    await publish(openAiChannel().status({ nodeId, status: "error" }));
+    throw new NonRetriableError("OpenAi Node: Model not configured");
   }
 
   if (!data.userPrompt) {
-    await publish(geminiChannel().status({ nodeId, status: "error" }));
-    throw new NonRetriableError("Gemini node: User prompt not configured");
+    await publish(openAiChannel().status({ nodeId, status: "error" }));
+    throw new NonRetriableError("OpenAi Node: User prompt not configured");
   }
 
   const credentialValue = process.env.GEMINI_API_KEY;
   if (!credentialValue) {
-    await publish(geminiChannel().status({ nodeId, status: "error" }));
+    await publish(openAiChannel().status({ nodeId, status: "error" }));
     throw new NonRetriableError(
-      "Gemini node: GEMINI_API_KEY is not set in environment variables"
+      "OpenAi Node: OPENAI_API_KEY is not set in environment variables",
     );
   }
 
   // Initialize Google API
-  const google = createGoogleGenerativeAI({ apiKey: credentialValue });
+  const openAI = createOpenAI({ apiKey: credentialValue });
 
   try {
     // Create model instance — auto schema switching
-    const modelInstance = google(data.model);
+    const modelInstance = openAI(data.model);
 
     const compiledSystem = data.systemPrompt
       ? Handlebars.compile(data.systemPrompt)(context)
@@ -76,18 +75,16 @@ export const geminiExecutor: NodeExecutor<GeminiNodeData> = async ({
     const compiledUser = Handlebars.compile(data.userPrompt)(context);
 
     const { text, finishReason, usage } = await step.ai.wrap(
-      "gemini-generate-text",
+      "openAi-generate-text",
       generateText,
       {
-        model: modelInstance,
+        model: modelInstance as unknown as LanguageModel,
         system: compiledSystem,
         prompt: compiledUser,
-      }
+      },
     );
 
-    await publish(
-      geminiChannel().status({ nodeId, status: "success" })
-    );
+    await publish(openAiChannel().status({ nodeId, status: "success" }));
 
     return {
       ...(context ?? {}),
@@ -101,9 +98,7 @@ export const geminiExecutor: NodeExecutor<GeminiNodeData> = async ({
       },
     };
   } catch (error) {
-    await publish(
-      geminiChannel().status({ nodeId, status: "error" })
-    );
+    await publish(openAiChannel().status({ nodeId, status: "error" }));
     throw error;
   }
 };
