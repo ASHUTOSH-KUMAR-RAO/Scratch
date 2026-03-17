@@ -1,48 +1,49 @@
 "use client";
 
+import { openAiChannel } from "@/inngest/channels/openai";
 import { Node, NodeProps, useReactFlow } from "@xyflow/react";
 import { memo, useState } from "react";
-import { BaseExecutionNode } from "../base-execution-node";
-import { GeminiDialog } from "./dialog";
 import { useNodeStatus } from "../../hooks/use-node-status";
-import { fetchGeminiRealtimeToken } from "./actions";
-import { geminiChannel } from "@/inngest/channels/gemini";
+import { BaseExecutionNode } from "../base-execution-node";
+import { OpenAiDialog } from "./dialog";
+import { fetchOpenAiRealtimeToken } from "./actions";
 
-type GeminiModel =
-  | "gemini-2.0-flash"
-  | "gemini-2.0-flash-lite"
-  | "gemini-1.5-flash"
-  | "gemini-1.5-flash-8b"
-  | "gemini-1.5-pro";
+type OpenAiModel =
+  | "gpt-5.3"
+  | "gpt-5.3-mini"
+  | "gpt-5.2"
+  | "gpt-5.1"
+  | "gpt-4.1"
+  | "gpt-4.1-mini";
 
-type GeminiNodeData = {
+type OpenAiNodeData = {
   variableName?: string;
-  model?: GeminiModel;
+  model?: OpenAiModel;
   userPrompt?: string;
   systemPrompt?: string;
   [key: string]: unknown;
 };
 
-type GeminiNodeType = Node<GeminiNodeData>;
+type OpenAiNodeType = Node<OpenAiNodeData>;
 
-export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
+export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { setNodes } = useReactFlow();
-  const nodeData = props.data as GeminiNodeData;
+  const nodeData = props.data as OpenAiNodeData;
   const description = nodeData.variableName
     ? `${nodeData.variableName} • ${nodeData.model ?? "gemini-2.0-flash"}`
     : "Not Configured";
 
   const nodeStatus = useNodeStatus({
     nodeId: props.id,
-    channel: geminiChannel().name,
+    channel: openAiChannel().name,
     topic: "status",
-    refreshToken: fetchGeminiRealtimeToken,
+    refreshToken: fetchOpenAiRealtimeToken,
   });
 
   const handleSubmit = (values: {
     variableName: string;
-    model: GeminiModel;
+    model: OpenAiModel;
     userPrompt: string;
     systemPrompt?: string;
   }) => {
@@ -66,7 +67,7 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
 
   return (
     <>
-      <GeminiDialog
+      <OpenAiDialog
         open={dialogOpen}
         onOpenChange={(open) => setDialogOpen(open)}
         onSubmit={handleSubmit}
@@ -80,8 +81,8 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
       <BaseExecutionNode
         {...props}
         id={props.id}
-        icon="/logo/gemini.svg"
-        name="Gemini"
+        icon="/logo/openai.svg"
+        name="OpenAi"
         description={description}
         status={nodeStatus}
         onDoubleClick={handleOpenSettings}
@@ -91,4 +92,4 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
   );
 });
 
-GeminiNode.displayName = "GeminiNode";
+OpenAiNode.displayName = "OpenAiNode";
