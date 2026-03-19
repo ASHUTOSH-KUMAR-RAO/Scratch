@@ -10,16 +10,17 @@ datasource db {
 }
 
 model User {
-  id            String      @id
+  id            String         @id
   name          String
   email         String
-  emailVerified Boolean     @default(false)
+  emailVerified Boolean        @default(false)
   image         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   sessions      Session[]
   accounts      Account[]
   workflows     Workflow[]
+  credentials   Credentials[]
 
   @@unique([email])
   @@map("user")
@@ -83,6 +84,26 @@ enum NodeType{
   GEMINI
   OPENAI
 }
+
+model Credentials{
+  id        String    @id @default(cuid())
+  name      String
+  value     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  type CredentialType
+  userId    String
+
+  user      User     @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  Node      Node[]
+}
+
+enum CredentialType {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+}
 model Workflow{
   id          String        @id @default(cuid())
   name        String
@@ -102,7 +123,8 @@ model Node {
   type              NodeType
   position          Json
   data              Json          @default("{}")
-
+  credentialId      String?
+  credentials       Credentials? @relation(fields: [credentialId],references: [id])
   outputConnections Connection[] @relation("FromNode")
   inputConnection   Connection[] @relation("ToNode")
   createdAt         DateTime      @default(now())
